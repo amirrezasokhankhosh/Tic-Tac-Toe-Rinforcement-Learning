@@ -1,0 +1,5 @@
+rl-glue
+gym
+numpy
+matplotlib
+tqdm
