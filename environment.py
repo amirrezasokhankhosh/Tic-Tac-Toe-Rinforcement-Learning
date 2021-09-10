@@ -5,10 +5,11 @@
 
 from RLGlue import BaseEnvironment
 import numpy as np
-from numpy.core.numeric import array_equal
 
 
 class TicTacToeEnvironment(BaseEnvironment):
+    def __init__(self):
+        pass
     def env_init(self, env_info={}):
         """
         Setup for the environment called when the experiment first starts.
@@ -57,12 +58,12 @@ class TicTacToeEnvironment(BaseEnvironment):
 
         return self.reward_obs_term
 
-    def find_actions(state):
+    def find_actions(self, state):
         actions = []
-        for x in state:
-            for y in x:
-                if y == 0:
-                    actions.append((x, y))
+        for i in range(0, 3, 1):
+            for j in range(0, 3, 1):
+                if state[i, j] == 0:
+                    actions.append((i, j))
         return actions
     
     def get_board(self):
