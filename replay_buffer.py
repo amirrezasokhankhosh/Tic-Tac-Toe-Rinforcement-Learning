@@ -2,6 +2,9 @@ import numpy as np
 
 
 class ReplayBuffer:
+    
+    # DONE!
+    
     def __init__(self, size, minibatch_size, seed):
         """
         Args:
@@ -14,18 +17,18 @@ class ReplayBuffer:
         self.rand_generator = np.random.RandomState(seed)
         self.max_size = size
 
-    def append(self, state, action, reward, terminal, next_state):
+    def append(self, observation, action, reward, terminal, next_observation):
         """
         Args:
-            state (Numpy array): The state.
+            observation (Numpy array): The observation.
             action (integer): The action.
             reward (float): The reward.
             terminal (integer): 1 if the next state is a terminal state and 0 otherwise.
-            next_state (Numpy array): The next state.
+            next_observation (Numpy array): The next observation.
         """
         if len(self.buffer) == self.max_size:
             del self.buffer[0]
-        self.buffer.append([state, action, reward, terminal, next_state])
+        self.buffer.append([observation, action, reward, terminal, next_observation])
 
     def sample(self):
         """
