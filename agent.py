@@ -132,21 +132,27 @@ class Agent(BaseAgent):
         action = self.policy(observation)
 
         # Append new experience to replay buffer
+        # Note: look at the replay_buffer append function for the order of arguments
         self.replay_buffer.append(self.last_observation, self.last_action, reward, 0, observation)
+        # your code here
 
         # Perform replay steps:
         if self.replay_buffer.size() > self.replay_buffer.minibatch_size:
-            current_v = deepcopy(self.network)
+            current_q = deepcopy(self.network)
             for _ in range(self.num_replay):
                 # Get sample experiences from the replay buffer
                 experiences = self.replay_buffer.sample()
 
                 # Call optimize_network to update the weights of the network (~1 Line)
-                optimize_network(experiences, self.discount, self.optimizer, self.network, current_v, self.tau)
+                # your code here
+                optimize_network(experiences, self.discount, self.optimizer, self.network, current_q, self.tau)
 
         # Update the last state and last action.
-        self.last_observation = observation
+        ### START CODE HERE (~2 Lines)
+        self.last_state = state
         self.last_action = action
+        ### END CODE HERE
+        # your code here
 
         return action
 
@@ -160,22 +166,25 @@ class Agent(BaseAgent):
         """
         self.sum_rewards += reward
         self.episode_steps += 1
-        
-        observation = (np.zeros_like(self.last_observation[0]), [])
+
+        # Set terminal state to an array of zeros
+        state = np.zeros_like(self.last_state)
 
         # Append new experience to replay buffer
-        self.replay_buffer.append(self.last_observation, self.last_action, reward, 1, observation)
+        # Note: look at the replay_buffer append function for the order of arguments
+        self.replay_buffer.append(self.last_state, self.last_action, reward, 1, state)
+        # your code here
 
         # Perform replay steps:
         if self.replay_buffer.size() > self.replay_buffer.minibatch_size:
-            current_v = deepcopy(self.network)
+            current_q = deepcopy(self.network)
             for _ in range(self.num_replay):
                 # Get sample experiences from the replay buffer
                 experiences = self.replay_buffer.sample()
 
                 # Call optimize_network to update the weights of the network
                 # your code here
-                optimize_network(experiences, self.discount, self.optimizer, self.network, current_v, self.tau)
+                optimize_network(experiences, self.discount, self.optimizer, self.network, current_q, self.tau)
 
     def agent_message(self, message):
         if message == "get_sum_reward":
@@ -227,7 +236,104 @@ class Agent(BaseAgent):
             action_probs[i, 0] = action_values[i, 0]
             action_probs[i, 1] = probs[i]
         return action_probs
-    
-     
-    
+
+    def get_td_error(self, observations, next_observations, actions, rewards, discount, terminals, network, current_v, tau):
+        """
+        Args:
+            observations (Numpy array): The batch of states with the shape (batch_size, state_dim).
+            next_observations (Numpy array): The batch of next states with the shape (batch_size, state_dim).
+            actions (Numpy array): The batch of actions with the shape (batch_size,).
+            rewards (Numpy array): The batch of rewards with the shape (batch_size,).
+            discount (float): The discount factor.
+            terminals (Numpy array): The batch of terminals with the shape (batch_size,).
+            network (ActionValueNetwork): The latest state of the network that is getting replay updates.
+            current_q (ActionValueNetwork): The fixed network used for computing the targets, 
+                                            and particularly, the action-values at the next-states.
+        Returns:
+            The TD errors (Numpy array) for actions taken, of shape (batch_size,)
+        """
         
+        # Note: Here network is the latest state of the network that is getting replay updates. In other words, 
+        # the network represents Q_{t+1}^{i} whereas current_q represents Q_t, the fixed network used for computing the 
+        # targets, and particularly, the action-values at the next-states.
+        
+        # Compute action values at next states using current_q network
+        q_next_mat = current_v.get_action_values(observations)
+        
+        # Compute policy at next state by passing the action-values in q_next_mat to softmax()
+        probs_mat = self.softmax(q_next_mat, tau)
+        
+        # Compute the estimate of the next state value, v_next_vec.
+        v_next_vec = np.sum(q_next_mat * probs_mat, axis=1) * (1-terminals)
+        
+        # Compute Expected Sarsa target
+        target_vec = rewards + discount * v_next_vec
+        
+        # Compute action values at the current states for all actions using network
+        q_mat = network.get_action_values(observations)
+        
+        
+        # Batch Indices is an array from 0 to the batch size - 1. 
+        batch_indices = np.arange(q_mat.shape[0])
+
+        # Compute q_vec by selecting q(s, a) from q_mat for taken actions
+        # Use batch_indices as the index for the first dimension of q_mat
+        # Note that q_vec is a 1D array of shape (batch_size)
+        
+        ### START CODE HERE (~1 Line)
+        q_vec = q_mat[batch_indices, actions]
+        ### END CODE HERE
+        
+        # Compute TD errors for actions taken
+        # Note that delta_vec is a 1D array of shape (batch_size)
+        
+        ### START CODE HERE (~1 Line)
+        delta_vec = target_vec - q_vec
+        ### END CODE HERE
+        
+        return delta_vec
+
+
+    def optimize_network(self, experiences, discount, optimizer, network, current_q, tau):
+        """
+        Args:
+            experiences (Numpy array): The batch of experiences including the states, actions, 
+                                    rewards, terminals, and next_states.
+            discount (float): The discount factor.
+            network (ActionValueNetwork): The latest state of the network that is getting replay updates.
+            current_q (ActionValueNetwork): The fixed network used for computing the targets, 
+                                            and particularly, the action-values at the next-states.
+        """
+        
+        # Get states, action, rewards, terminals, and next_states from experiences
+        observations, actions, rewards, terminals, next_observations = map(list, zip(*experiences))
+        observations = np.concatenate(observations)
+        next_observations = np.concatenate(next_observations)
+        rewards = np.array(rewards)
+        terminals = np.array(terminals)
+        batch_size = observations.shape[0]
+
+        # Compute TD error using the get_td_error function
+        # Note that q_vec is a 1D array of shape (batch_size)
+        delta_vec = self.get_td_error(observations, next_observations, actions, rewards, discount, terminals, network, current_q, tau)
+
+        # Batch Indices is an array from 0 to the batch_size - 1. 
+        batch_indices = np.arange(batch_size)
+
+        # Make a td error matrix of shape (batch_size, num_actions)
+        # delta_mat has non-zero value only for actions taken
+        delta_mat = np.zeros((batch_size, network.num_actions))
+        delta_mat[batch_indices, actions] = delta_vec
+
+        # Pass delta_mat to compute the TD errors times the gradients of the network's weights from back-propagation
+        grads = network.get_gradient(last_state_vec)
+        g = [dict() for i in range(self.num_hidden_layer+1)]
+        for i in range(self.num_hidden_layer+1):
+            for param in self.weights[i].keys():
+                g[i][param] = delta * grads[i][param]
+        
+        # Pass network.get_weights and the td_update to the optimizer to get updated weights
+        weights = optimizer.update_weights(network.get_weights(), g)
+        
+        network.set_weights(weights)
+
