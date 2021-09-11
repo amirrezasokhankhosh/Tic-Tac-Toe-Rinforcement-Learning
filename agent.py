@@ -75,13 +75,13 @@ class Agent(BaseAgent):
         Returns:
             the action.
         """
-        
-        # DONE!
-        
         action_values = self.get_action_values(observation)
         probs_batch = self.softmax(action_values, self.tau)
         index = self.rand_generator.choice(len(observation[1]), p=probs_batch[:, 1].squeeze())
-        return action_values[index, 0]
+        action_num = action_values[index, 0]
+        y = action_num % 3
+        x = action_num // 3
+        return (x, y)
 
 
     def agent_start(self, state):
@@ -256,8 +256,6 @@ class Agent(BaseAgent):
             A 2D array of shape (batch_size, num_actions). Where each column is a probability distribution over
             the actions representing the policy.
         """
-        
-        # DONE!
         
         # Compute the preferences by dividing the action-values by the temperature parameter tau
         preferences = action_values[:, 1] / tau
