@@ -3,7 +3,7 @@ from replay_buffer import ReplayBuffer
 from RLGlue.agent import BaseAgent
 from state_value_network import StateValueNetwork
 from Adam import Adam
-
+from copy import deepcopy
 
 class Agent(BaseAgent):
     def __init__(self):
@@ -132,27 +132,21 @@ class Agent(BaseAgent):
         action = self.policy(observation)
 
         # Append new experience to replay buffer
-        # Note: look at the replay_buffer append function for the order of arguments
         self.replay_buffer.append(self.last_observation, self.last_action, reward, 0, observation)
-        # your code here
 
         # Perform replay steps:
         if self.replay_buffer.size() > self.replay_buffer.minibatch_size:
-            current_q = deepcopy(self.network)
+            current_v = deepcopy(self.network)
             for _ in range(self.num_replay):
                 # Get sample experiences from the replay buffer
                 experiences = self.replay_buffer.sample()
 
                 # Call optimize_network to update the weights of the network (~1 Line)
-                # your code here
-                optimize_network(experiences, self.discount, self.optimizer, self.network, current_q, self.tau)
+                optimize_network(experiences, self.discount, self.optimizer, self.network, current_v, self.tau)
 
         # Update the last state and last action.
-        ### START CODE HERE (~2 Lines)
-        self.last_state = state
+        self.last_observation = observation
         self.last_action = action
-        ### END CODE HERE
-        # your code here
 
         return action
 
@@ -166,25 +160,22 @@ class Agent(BaseAgent):
         """
         self.sum_rewards += reward
         self.episode_steps += 1
-
-        # Set terminal state to an array of zeros
-        state = np.zeros_like(self.last_state)
+        
+        observation = (np.zeros_like(self.last_observation[0]), [])
 
         # Append new experience to replay buffer
-        # Note: look at the replay_buffer append function for the order of arguments
-        self.replay_buffer.append(self.last_state, self.last_action, reward, 1, state)
-        # your code here
+        self.replay_buffer.append(self.last_observation, self.last_action, reward, 1, observation)
 
         # Perform replay steps:
         if self.replay_buffer.size() > self.replay_buffer.minibatch_size:
-            current_q = deepcopy(self.network)
+            current_v = deepcopy(self.network)
             for _ in range(self.num_replay):
                 # Get sample experiences from the replay buffer
                 experiences = self.replay_buffer.sample()
 
                 # Call optimize_network to update the weights of the network
                 # your code here
-                optimize_network(experiences, self.discount, self.optimizer, self.network, current_q, self.tau)
+                optimize_network(experiences, self.discount, self.optimizer, self.network, current_v, self.tau)
 
     def agent_message(self, message):
         if message == "get_sum_reward":
