@@ -5,11 +5,13 @@
 
 from RLGlue import BaseEnvironment
 import numpy as np
+import random
 
 
 class TicTacToeEnvironment(BaseEnvironment):
     def __init__(self):
         pass
+
     def env_init(self, env_info={}):
         """
         Setup for the environment called when the experiment first starts.
@@ -27,7 +29,7 @@ class TicTacToeEnvironment(BaseEnvironment):
         """
 
         reward = 0.0
-        state = self.board
+        state = np.zeros((3, 3))
         actions = self.find_actions(state)
         observation = (state, actions)
         is_terminal = False
@@ -49,7 +51,8 @@ class TicTacToeEnvironment(BaseEnvironment):
         """
 
         self.take_action(action)
-        state = self.board
+        self.take_action_opp()
+        state = np.copy(self.board)
         actions = self.find_actions(state)
         observation = (state, actions)
         reward, is_terminal = self.get_reward()
@@ -65,21 +68,27 @@ class TicTacToeEnvironment(BaseEnvironment):
                 if state[i, j] == 0:
                     actions.append((i, j))
         return actions
-    
+
     def get_board(self):
         return self.board
 
     def set_board(self, board):
         self.board = board
-        
+
     def take_action(self, action):
         """
             0 represents none chosen grid.
             1 represents agent action.
             2 represents opponent action.
         """
-        self.board[action[0], action[1]] = 1
+        self.board[int(action[0]), int(action[1])] = 1
         
+    def take_action_opp(self):
+        possible_actions = self.find_actions(np.copy(self.board))
+        if len(possible_actions) != 0:
+            action = random.choice(possible_actions)
+            self.board[int(action[0]), int(action[1])] = 2
+
     def get_reward(self):
         """
             Win : 10
@@ -92,23 +101,25 @@ class TicTacToeEnvironment(BaseEnvironment):
         if np.count_nonzero(self.board) == 9:
             is_terminal = True
         for x in self.board:
-            if np.array_equal(x , np.ones(3)):
+            if np.array_equal(x, np.ones(3)):
                 reward += 10
                 is_terminal = True
-            elif np.array_equal(x , np.full(3, 2)):
+            elif np.array_equal(x, np.full(3, 2)):
                 reward += -10
                 is_terminal = True
         for x in self.board.T:
-            if np.array_equal(x , np.ones(3)):
+            if np.array_equal(x, np.ones(3)):
                 reward += 10
                 is_terminal = True
-            elif np.array_equal(x , np.full(3, 2)):
+            elif np.array_equal(x, np.full(3, 2)):
                 reward += -10
                 is_terminal = True
-        if np.array_equal(np.diagonal(self.board), np.full(3, 1)) or np.array_equal(np.fliplr(self.board).diagonal(), np.full(3, 1)):
+        if np.array_equal(np.diagonal(self.board), np.full(3, 1)) or np.array_equal(np.fliplr(self.board).diagonal(),
+                                                                                    np.full(3, 1)):
             reward += 10
             is_terminal = True
-        elif np.array_equal(np.diagonal(self.board), np.full(3, 2)) or np.array_equal(np.fliplr(self.board).diagonal(), np.full(3, 2)):
+        elif np.array_equal(np.diagonal(self.board), np.full(3, 2)) or np.array_equal(np.fliplr(self.board).diagonal(),
+                                                                                      np.full(3, 2)):
             reward += -10
             is_terminal = True
         return reward, is_terminal
