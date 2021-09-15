@@ -104,22 +104,28 @@ class TicTacToeEnvironment(BaseEnvironment):
             if np.array_equal(x, np.ones(3)):
                 reward += 10
                 is_terminal = True
+                return reward, is_terminal
             elif np.array_equal(x, np.full(3, 2)):
                 reward += -10
                 is_terminal = True
+                return reward, is_terminal
         for x in self.board.T:
             if np.array_equal(x, np.ones(3)):
                 reward += 10
                 is_terminal = True
+                return reward, is_terminal
             elif np.array_equal(x, np.full(3, 2)):
                 reward += -10
                 is_terminal = True
+                return reward, is_terminal
         if np.array_equal(np.diagonal(self.board), np.full(3, 1)) or np.array_equal(np.fliplr(self.board).diagonal(),
                                                                                     np.full(3, 1)):
             reward += 10
             is_terminal = True
+            return reward, is_terminal
         elif np.array_equal(np.diagonal(self.board), np.full(3, 2)) or np.array_equal(np.fliplr(self.board).diagonal(),
                                                                                       np.full(3, 2)):
             reward += -10
             is_terminal = True
+            return reward, is_terminal
         return reward, is_terminal
