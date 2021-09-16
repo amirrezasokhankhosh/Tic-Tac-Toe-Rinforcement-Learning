@@ -46,7 +46,7 @@ agent_config = {
 }
 
 
-avg_rewards = np.zeros(10)
+avg_rewards = np.zeros(20)
 
 agent = Agent()
 agent.agent_init(agent_config)
@@ -54,8 +54,8 @@ agent.agent_init(agent_config)
 env = TicTacToeEnvironment()
 env.env_init()
 for j in range(len(avg_rewards)):
-    print("Progress : " + str(j * 3) + "%.")
-    rewards = np.zeros(300)
+    print("Progress : " + str(j * 5) + "%.")
+    rewards = np.zeros(15)
     for i in range(len(rewards)):
         obs = env.env_start()
         action = agent.agent_start(obs)
@@ -67,8 +67,10 @@ for j in range(len(avg_rewards)):
         rewards[i] = agent.sum_rewards
     avg_rewards[j] = np.average(rewards)
 
-x_axis = np.zeros(10)
+x_axis = np.zeros(20)
 for i in range(len(x_axis)):
     x_axis[i] = i + 1
 plt.plot(x_axis, avg_rewards)
+plt.xlabel("Runs (Each run = 30 episodes)")
+plt.ylabel("Average Reward")
 plt.show()

@@ -29,6 +29,7 @@ class TicTacToeEnvironment(BaseEnvironment):
         """
 
         reward = 0.0
+        self.board = np.zeros((3, 3))
         state = np.zeros((3, 3))
         actions = self.find_actions(state)
         observation = (state, actions)
@@ -51,12 +52,15 @@ class TicTacToeEnvironment(BaseEnvironment):
         """
 
         self.take_action(action)
-        self.take_action_opp()
-        state = np.copy(self.board)
-        actions = self.find_actions(state)
-        observation = (state, actions)
         reward, is_terminal = self.get_reward()
-
+        if not is_terminal:
+            self.take_action_opp()
+            state = np.copy(self.board)
+            actions = self.find_actions(state)
+            observation = (state, actions)
+        else:
+            observation = (0, 0)
+        reward, is_terminal = self.get_reward()
         self.reward_obs_term = (reward, observation, is_terminal)
 
         return self.reward_obs_term
@@ -85,9 +89,8 @@ class TicTacToeEnvironment(BaseEnvironment):
         
     def take_action_opp(self):
         possible_actions = self.find_actions(np.copy(self.board))
-        if len(possible_actions) != 0:
-            action = random.choice(possible_actions)
-            self.board[int(action[0]), int(action[1])] = 2
+        action = random.choice(possible_actions)
+        self.board[int(action[0]), int(action[1])] = 2
 
     def get_reward(self):
         """
